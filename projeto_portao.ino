@@ -9,15 +9,15 @@ int enB = 3;
 int in3 = 5;
 int in4 = 4;
 
-float distance_close= 6;   //5
-float distance_1    = 12;  //15
-float distance_2    = 14;  //25
-float distance_open = 18;  //35
+float distance_close= 40;   //5
+float distance_1    = 27;  //15
+float distance_2    = 18;  //25
+float distance_open = 5;  //35
 
 int speed_fast      = 90; //250
-int speed_medium    = 80; //150
-int speed_slow      = 70; //100
-int speed_very_slow = 80;  //70
+int speed_medium    = 90; //150
+int speed_slow      = 90; //100
+int speed_very_slow = 90;  //70
 
 enum states{
   OPEN,             //0
@@ -182,7 +182,7 @@ void loop(){
 }
 
 
-void moveToBackward(int speed_motor){
+void moveToForward(int speed_motor){
   analogWrite(enB, speed_motor);
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
@@ -190,7 +190,7 @@ void moveToBackward(int speed_motor){
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 }
-void moveToForward(int speed_motor){
+void moveToBackward(int speed_motor){
   analogWrite(enB, speed_motor);
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
