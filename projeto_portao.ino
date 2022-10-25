@@ -12,12 +12,13 @@ int in4 = 4;
 float distance_close= 40;   //5
 float distance_1    = 27;  //15
 float distance_2    = 18;  //25
-float distance_open = 5;  //35
+float distance_open = 12;  //35
 
-int speed_fast      = 90; //250
-int speed_medium    = 90; //150
-int speed_slow      = 90; //100
-int speed_very_slow = 90;  //70
+int speed_very_fast = 80;
+int speed_fast      = 80; //250
+int speed_medium    = 80; //150
+int speed_slow      = 80; //100
+int speed_very_slow = 80;  //70
 
 enum states{
   OPEN,             //0
@@ -61,61 +62,61 @@ void moving_gate(){
   switch(current_state){
       case OPENING_1:
         moveToForward(speed_fast);
-        if(getGateDistance() >= distance_1){
+        if(getGateDistance() <= distance_1){
           current_state = OPENING_2;
         }
         break;
       case OPENING_2:
         moveToForward(speed_medium);
-        if(getGateDistance() >= distance_2){
+        if(getGateDistance() <= distance_2){
           current_state = OPENING_FINISH;
         }
         break;
       case OPENING_FINISH:
         moveToForward(speed_slow);
-        if(getGateDistance() >= distance_open){
+        if(getGateDistance() <= distance_open){
           current_state = OPEN;
         }
         break;
       case CLOSING_1:
         moveToBackward(speed_fast);
-        if(getGateDistance() <= distance_2){
+        if(getGateDistance() >= distance_2){
           current_state = CLOSING_2;
         }
         break;
       case CLOSING_2:
         moveToBackward(speed_medium);
-        if(getGateDistance() <= distance_1){
+        if(getGateDistance() >= distance_1){
           current_state = CLOSING_FINISH;
         }
         break;
-      case CLOSING_FINISH: 
+       case CLOSING_FINISH: 
         moveToBackward(speed_slow);
-        if(getGateDistance() <= distance_close){
+        if(getGateDistance() >= distance_close){
           current_state = CLOSE;
         }
         break;
       case TO_OPEN_1:
         moveToForward(speed_very_slow);
-        if(getGateDistance() >= distance_1){
+        if(getGateDistance() <= distance_1){
           current_state = OPEN_1;
         }
         break;
       case TO_OPEN_2:
         moveToForward(speed_very_slow);
-        if(getGateDistance() >= distance_2){
+        if(getGateDistance() <= distance_2){
           current_state = OPEN_2;
         }
         break;
       case TO_CLOSE_1:
         moveToBackward(speed_very_slow);
-        if(getGateDistance() <= distance_2){
+        if(getGateDistance() >= distance_2){
           current_state = CLOSE_1;
         }
         break;
       case TO_CLOSE_2:
         moveToBackward(speed_very_slow);
-        if(getGateDistance() <= distance_1){
+        if(getGateDistance() >= distance_1){
           current_state = CLOSE_2;
         }
         break;
@@ -123,9 +124,10 @@ void moving_gate(){
 }
  
 void loop(){
-  
-  Serial.println("State before moving: ");
-  Serial.println(current_state);
+  Serial.println(getGateDistance()*10);
+  delay(20);
+  //Serial.println("State before moving: ");
+  //Serial.println(current_state);
   /*
   Espera o botão ser pressionado
   */
@@ -159,30 +161,34 @@ void loop(){
         current_state = TO_CLOSE_2;
         break;
       case OPEN_1:
+        impulseMotorForce(0);
         current_state = CLOSING_FINISH;
         break;
       case OPEN_2:
+        impulseMotorForce(0);
         current_state = CLOSING_2;
         break;
       case CLOSE_1:
+        impulseMotorForce(1);
         current_state = OPENING_FINISH;
         break;
       case CLOSE_2:
+        impulseMotorForce(1);
         current_state = OPENING_2;
         break;
       default:
         break;
     }
   }
-  Serial.println("State after set states: ");
-  Serial.println(current_state);
+  //Serial.println("State after set states: ");
+  //Serial.println(current_state);
   moving_gate();
-  Serial.println("State after moving: ");
-  Serial.println(current_state);
+  //Serial.println("State after moving: ");
+  //Serial.println(current_state);
 }
 
 
-void moveToForward(int speed_motor){
+void moveToBackward(int speed_motor){
   analogWrite(enB, speed_motor);
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
@@ -190,7 +196,7 @@ void moveToForward(int speed_motor){
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 }
-void moveToBackward(int speed_motor){
+void moveToForward(int speed_motor){
   analogWrite(enB, speed_motor);
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
@@ -199,12 +205,17 @@ void moveToBackward(int speed_motor){
   digitalWrite(in4, LOW);
 }
 
+void impulseMotorForce(int sense){
+  if(!sense){
+    moveToBackward(speed_very_fast);
+  }else{
+    moveToForward(speed_very_fast);
+  }
+}
 
 float getGateDistance(){
   float cmMsec;
   long microsec = ultrasonic.timing();
   cmMsec = ultrasonic.convert(microsec, Ultrasonic::CM);
-  Serial.print("Distance: ");
-  Serial.println(cmMsec);
   return cmMsec;
 }
