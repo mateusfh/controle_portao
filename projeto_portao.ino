@@ -5,9 +5,6 @@
 
 #define pin_button 11
 
-Serial mySerial; //Funcionalidade serial
-PrintWriter output; //Funcionalidade de escrita em arquivos
-
 int enB = 3;
 int in3 = 5;
 int in4 = 4;
@@ -15,13 +12,15 @@ int in4 = 4;
 float distance_close= 40;   //5
 float distance_1    = 27;  //15
 float distance_2    = 18;  //25
-float distance_open = 12;  //35
+float distance_open = 8;  //35
 
 int speed_very_fast = 80;
 int speed_fast      = 80; //250
 int speed_medium    = 80; //150
 int speed_slow      = 80; //100
 int speed_very_slow = 80;  //70
+
+float lastClickDistance;
 
 enum states{
   OPEN,             //0
@@ -44,13 +43,12 @@ enum states{
 
 int current_state = OPEN;
 
+long startTime;
+
 Ultrasonic ultrasonic(pin_trigger, pin_echo);
  
 void setup(){
   Serial.begin(9600);
-
-  String portName = Serial.list()[0]; //configura a porta serial
-  mySerial = new Serial(this, portName, 9600);
 
   pinMode(pin_button, INPUT);
   pinMode(enB, OUTPUT);
@@ -59,6 +57,8 @@ void setup(){
   
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
+
+  startTime = millis();
 }
 
 
@@ -67,61 +67,61 @@ void setup(){
 void moving_gate(){
   switch(current_state){
       case OPENING_1:
-        moveToForward(speed_fast);
+        moveToForward(setSpeed(OPENING_1));
         if(getGateDistance() <= distance_1){
           current_state = OPENING_2;
         }
         break;
       case OPENING_2:
-        moveToForward(speed_medium);
+        moveToForward(setSpeed(OPENING_2));
         if(getGateDistance() <= distance_2){
           current_state = OPENING_FINISH;
         }
         break;
       case OPENING_FINISH:
-        moveToForward(speed_slow);
+        moveToForward(setSpeed(OPENING_FINISH));
         if(getGateDistance() <= distance_open){
           current_state = OPEN;
         }
         break;
       case CLOSING_1:
-        moveToBackward(speed_fast);
+        moveToBackward(setSpeed(CLOSING_1));
         if(getGateDistance() >= distance_2){
           current_state = CLOSING_2;
         }
         break;
       case CLOSING_2:
-        moveToBackward(speed_medium);
+        moveToBackward(setSpeed(CLOSING_2));
         if(getGateDistance() >= distance_1){
           current_state = CLOSING_FINISH;
         }
         break;
        case CLOSING_FINISH: 
-        moveToBackward(speed_slow);
+        moveToBackward(setSpeed(CLOSING_FINISH));
         if(getGateDistance() >= distance_close){
           current_state = CLOSE;
         }
         break;
       case TO_OPEN_1:
-        moveToForward(speed_very_slow);
+        moveToForward(setSpeed(TO_OPEN_1));
         if(getGateDistance() <= distance_1){
           current_state = OPEN_1;
         }
         break;
       case TO_OPEN_2:
-        moveToForward(speed_very_slow);
+        moveToForward(setSpeed(TO_OPEN_2));
         if(getGateDistance() <= distance_2){
           current_state = OPEN_2;
         }
         break;
       case TO_CLOSE_1:
-        moveToBackward(speed_very_slow);
+        moveToBackward(setSpeed(TO_CLOSE_1));
         if(getGateDistance() >= distance_2){
           current_state = CLOSE_1;
         }
         break;
       case TO_CLOSE_2:
-        moveToBackward(speed_very_slow);
+        moveToBackward(setSpeed(TO_CLOSE_2));
         if(getGateDistance() >= distance_1){
           current_state = CLOSE_2;
         }
@@ -130,7 +130,9 @@ void moving_gate(){
 }
  
 void loop(){
-  Serial.println(getGateDistance()*10);
+  Serial.print(getGateDistance()*10);
+  Serial.print(" ");
+  Serial.println(millis() - startTime);
   delay(20);
   //Serial.println("State before moving: ");
   //Serial.println(current_state);
@@ -142,8 +144,7 @@ void loop(){
     Espera o botão parar de ser pressionado
     */
     while(digitalRead(pin_button)){}
-
-    Serial.println("Button pressed!");
+    lastClickDistance = getGateDistance();
     /*
     Verifica o estado atual do portão e atualiza
     */
@@ -167,19 +168,15 @@ void loop(){
         current_state = TO_CLOSE_2;
         break;
       case OPEN_1:
-        impulseMotorForce(0);
         current_state = CLOSING_FINISH;
         break;
       case OPEN_2:
-        impulseMotorForce(0);
         current_state = CLOSING_2;
         break;
       case CLOSE_1:
-        impulseMotorForce(1);
         current_state = OPENING_FINISH;
         break;
       case CLOSE_2:
-        impulseMotorForce(1);
         current_state = OPENING_2;
         break;
       default:
@@ -211,17 +208,40 @@ void moveToForward(int speed_motor){
   digitalWrite(in4, LOW);
 }
 
-void impulseMotorForce(int sense){
-  if(!sense){
-    moveToBackward(speed_very_fast);
-  }else{
-    moveToForward(speed_very_fast);
-  }
-}
-
 float getGateDistance(){
   float cmMsec;
   long microsec = ultrasonic.timing();
   cmMsec = ultrasonic.convert(microsec, Ultrasonic::CM);
   return cmMsec;
+}
+
+int setSpeed(int state){
+  float currentDistance = getGateDistance();
+  float focusDistance;
+
+  switch(state){
+    case OPENING_1:
+    case OPENING_2:
+    case OPENING_FINISH:
+        focusDistance = distance_open;
+        break;
+    case CLOSING_1:
+    case CLOSING_2:
+    case CLOSING_FINISH:
+        focusDistance = distance_close;
+        break;
+    case TO_OPEN_1:
+    case TO_CLOSE_2:
+        focusDistance = distance_1;
+        break;
+    case TO_OPEN_2:
+    case TO_CLOSE_1:
+        focusDistance = distance_2;
+        break;
+  }
+
+  int s = int((abs((currentDistance - focusDistance)/(lastClickDistance - focusDistance)))*(speed_medium-40))+40;
+  
+  //Serial.println(s);
+  return s;
 }
