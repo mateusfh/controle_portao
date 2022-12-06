@@ -240,7 +240,7 @@ int setSpeed(int state){
         break;
   }
 
-  int s = int((abs((currentDistance - focusDistance)/(lastClickDistance - focusDistance)))*(speed_medium-40))+40;
+  int s = int((abs((currentDistance - focusDistance)/(lastClickDistance - focusDistance)))*(speed_medium-45))+45;
   
   //Serial.println(s);
   return s;
